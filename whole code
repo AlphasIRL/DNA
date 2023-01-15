@@ -1,0 +1,92 @@
+from collections import Counter
+import gzip
+
+
+# string = "C:\\Users\\M0sa2\\Downloads\\"
+
+
+def eval_strand(fastq_file_path, print_bool=False):
+    len_line_counter = Counter()
+    line_counter = 0
+    dna_strands = []
+    dna_strands_counter = Counter()
+    dna_strands_with_n = 0
+    counter = 0
+    for line in fastq_file_path.readlines():
+        counter += 1
+        line = line.decode(encoding="ASCII")
+        line_counter += 1
+        if line_counter == 2:
+            line_counter = 4
+            len_line_counter[len(line)] += 1
+            dna_strands.append(line)
+            dna_strands_counter[line] += 1
+
+        elif line_counter % 4 == 0:
+            len_line_counter[len(line)] += 1
+            dna_strands.append(line)
+            dna_strands_counter[line] += 1
+
+    if print_bool:
+        print(f"Reads in the file = {int(counter / 4)}")
+
+
+
+    sum_strand_length = 0
+    for strand in dna_strands:
+        sum_strand_length += len(strand) - 1
+
+    average_strand_length = sum_strand_length / len(dna_strands)
+
+    numerator = 0
+    denominator = 0
+    strand_average = []
+    n_percentage_all = []
+    for strand in dna_strands:
+        n_in_strand = 0
+        if "N" in strand:
+            dna_strands_with_n += 1
+        for tide in strand:
+            if tide == "G" or tide == "C":
+                numerator += 1
+            elif tide.isalpha():
+                denominator += 1
+            if tide == "N":
+                n_in_strand += 1
+        n_percentage_all.append(round((n_in_strand / (len(strand) - 1)) * 100, 2))
+
+        strand_average.append(round(numerator / (denominator + numerator) * 100, 2))
+        numerator = 0
+        denominator = 0
+
+    real_average = sum(strand_average) / len(strand_average)
+    if print_bool:
+        print(f"Reads sequence average length = {round(average_strand_length)}")
+        print()
+        repeats = 0
+        for i in dna_strands_counter:
+            repeats += dna_strands_counter[i] - 1
+        print(f"Repeats = {repeats}")
+        print(f"Reads with Ns = {dna_strands_with_n}")
+        print()
+        print(f"GC content average = {round(real_average, 2)}%")
+        n_percentage = round(sum(n_percentage_all) / len(n_percentage_all), 2)
+        print(f"Ns per read sequence = {n_percentage}%")
+    n_percentage = round(sum(n_percentage_all) / len(n_percentage_all), 2)
+    return dna_strands_with_n, n_percentage
+
+
+def main():
+    first_file = input("")
+    first_n_cnt, first_n_per = eval_strand(gzip.open(first_file))
+    second_file = input("")
+    second_n_cnt, second_n_per = eval_strand(gzip.open(second_file))
+    third_file = input("")
+    third_n_cnt, third_n_per = eval_strand(gzip.open(third_file))
+
+    min(first_n_cnt, second_n_cnt, third_n_cnt)
+    eval_strand(gzip.open(first_file), True)
+
+
+if __name__ == "__main__":
+    main()
